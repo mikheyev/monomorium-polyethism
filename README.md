@@ -69,6 +69,3 @@ A similar approach was used to find honeybee (*Apis mellifera* homologs), except
 
 *monomorium.R* contains all of the statistical analysis.
 
-
-### GO term enrichment and plotting using [GOMWU](http://www.bio.utexas.edu/research/matz_lab/matzlab/Methods.html)
-
