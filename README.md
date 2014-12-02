@@ -4,9 +4,8 @@
 After filtering adaptor (*rename.sh*) and low quality sequence (*trim.sh*), concatenate results (*concat.sh*) and assemble genome reference using ABYSS (*abyss.sh*), using a range of k-mers from 51 to 91. k=69 produced the longest N50, and was chosen for future work.
 
 	n		n:500	n:N50	min	N80		N50		N20		max		sum
-	495189	73242	10537	500	2561	6715	14718	197847	259.3e6
-	216388	42794	4628	500	5605	16262	36932	246554	283e6
-	207026	36001	3980	500	6743	18960	43332	246554	283.7e6
+	216388	42794	4628	500	5605	16262	36932	246554	283e6	contigs
+	207026	36001	3980	500	6743	18960	43332	246554	283.7e6	scaffolds
 
 Map transcriptional data to the reference genome using tophat, and infer loci and isoforms using cufflinks (*tophat.sh* and *cuff.sh*). After merging all the libraries using *cuffmerge*, extract reference transcriptome using cufflink's *gffread* utility.
 
@@ -68,4 +67,41 @@ A similar approach was used to find honeybee (*Apis mellifera* homologs), except
 ## Statistics and plotting
 
 *monomorium.R* contains all of the statistical analysis.
+
+## genome annotation
+
+### Round 1
+
+Used training set from Wasmannia and Vollenhovia for first pass. After the run was complete, extracted every prediction that had good transcriptional support
+
+	maker2zff  -c 1 -e 1 -o 1
+
+### Round 2
+
+#### SNAPP training
+
+	fathom genome.ann genome.dna -gene-stats > gene-stats.log 2>&1
+	fathom genome.ann genome.dna -validate > validate.log 2>&1
+	fathom genome.ann genome.dna -categorize 1000 > categorize.log 2>&1
+	fathom uni.ann uni.dna -export 1000 -plus > uni-plus.log 2>&1
+	# 3328 genes
+	mkdir params; cd params
+	forge ../export.ann ../export.dna > ../forge.log 2>&1
+	cd ..; hmm-assembler.pl vol params/ > mp.hmm
+
+#### Augustus training
+
+	perl zff2augustus_gbk.pl > genes.gb
+	etraining --species=generic --stopCodonExcludedFromCDS=false genes.gb 2> train.err
+	cat train.err | perl -pe 's/.*in sequence (\S+): .*/$1/' > badgenes.lst
+	# no bad genes
+#	filterGenes.pl badgenes.lst round1.gb > genes.gb
+	randomSplit.pl genes.gb 200
+	autoAug.pl --species=ph --genome ../../../ref/Mp.fa --trainingset genes.gb   # 2673987
+	optimize_augustus.pl --cpus=12  --UTR=on --species=mph genes.gb.train
+	augustus --species=vem genes.gb.test >train_out.txt
+	grep -A 22 Evaluation  train_out.txt
+	
+
+	
 
